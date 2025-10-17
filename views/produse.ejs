@@ -1,0 +1,129 @@
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/custom-bootstrap.scss">
+<div id="suma-totala" style="font-size:1.2em; font-weight:bold; color:#2c3e50; margin-bottom:1em;"></div>
+
+<div class="grid-produse">
+<% produse.forEach(function(prod, idx) { %>
+  <% 
+    <!--cerinta 2A afisare border-->
+    let borderClass = 'border-c1';
+    if (idx % 6 === 2 || idx % 6 === 3) borderClass = 'border-c2';
+    if (idx % 6 === 4 || idx % 6 === 5) borderClass = 'border-c3';
+    let formaClass = '', formaStyle = '';
+    if (prod.tip === 'rotunda') {
+      formaClass = 'forma forma-cerc';
+    } else if (prod.tip === 'patrata') {
+      formaClass = 'forma forma-patrat';
+    } else if (prod.tip === 'dreptunghiulara') {
+      formaClass = 'forma forma-dreptunghi';
+    }
+    let primaCuloare = (prod.culori && prod.culori.length > 0) ? prod.culori[0] : 'gray';
+    formaStyle = 'background:' + primaCuloare + ';';
+    <!--cerinta 1B,C conversie unitate de masura-->
+    let factor = 1, newUnit = prod.um, newUnit2 = prod.um + '<sup>2</sup>';
+    if (prod.um === 'mm') {
+      factor = 0.1;
+      newUnit = 'cm';
+      newUnit2 = 'cm<sup>2</sup>';
+    }
+    const latime = (prod.latime * factor).toFixed(2);
+    const lungime = prod.lungime ? (prod.lungime * factor).toFixed(2) : null;
+    
+    <!--cerinta 1B calculare pretRedus-->
+    let pretRedus = prod.reducere > 0 ? Math.round(prod.pret * (100 - prod.reducere) / 100) : null;
+  %>
+  <section class="produs <%= borderClass %>"
+    data-pret-normal="<%= prod.pret %>"
+    <% if (pretRedus !== null) { %>data-pret-redus="<%= pretRedus %>"<% } %>
+  >
+    <div class="tooltip">
+      Produs: <%= prod.nume %> | Tip: <%= prod.tip %> | Culori: <%= (prod.culori || []).join(' / ') %>
+    </div>
+    
+    <!--cerinta 1B afisare nume produs-->
+    <h2>
+        <!--cerinta 2B afisare forma-->
+      <span class="<%= formaClass %>" style="<%= formaStyle %>"></span>
+      <%= prod.nume.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') %>
+    </h2>
+    
+    <p>Culori: <%= (prod.culori || []).join(' / ') %></p>
+    <!--cerinta 1C afisare detalii geometrice-->
+    <ul>
+      <% if (prod.tip === 'rotunda') { %>
+        <li>Rază: <%= (latime / 2).toFixed(2) %> <%= newUnit %></li>
+        <li>Arie: <%= (Math.PI * Math.pow(latime / 2, 2)).toFixed(2) %> <%- newUnit2 %></li>
+      <% } else if (prod.tip === 'patrata') { %>
+        <li>Latură: <%= latime %> <%= newUnit %></li>
+        <li>Arie: <%= Math.pow(latime, 2).toFixed(2) %> <%- newUnit2 %></li>
+      <% } else if (prod.tip === 'dreptunghiulara') { %>
+        <li>Lungime: <%= lungime %> <%= newUnit %></li>
+        <li>Latime: <%= latime %> <%= newUnit %></li>
+        <li>Arie: <%= (lungime * latime).toFixed(2) %> <%- newUnit2 %></li>
+      <% } %>
+    </ul>
+    <!--cerinta 1B calculare pret-->
+    <p>
+      <% if (prod.reducere === 0) { %>
+        Preț: <%= prod.pret %> lei
+      <% } else { %>
+        Preț: <s><%= prod.pret %> lei</s> <span style="color: red; font-weight: bold;"> <%= pretRedus %> lei</span>
+        (reducere: <%= prod.reducere %>%)
+      <% } %>
+    </p>
+    
+    <form>
+
+      <fieldset>
+        <legend>Alege prețul:</legend>
+        
+        <label>
+          <input type="radio" name="pret_produs_<%= idx %>" value="normal">
+          preț normal
+        </label>
+        
+        <% if (prod.reducere > 0) { %>
+          <label>
+            <input type="radio" name="pret_produs_<%= idx %>" value="redus">
+            preț redus
+          </label>
+        <% } %>
+        
+        <label>
+          <input type="radio" name="pret_produs_<%= idx %>" value="nu" checked>
+          nu se aplică
+        </label>
+      
+    </fieldset>
+    </form>
+  </section>
+<% }); %>
+</div>
+
+<div style="margin:2em 0; text-align:center;">
+  <button id="calculeaza-suma" type="button" class="btn btn-primary btn-lg">calculeaza suma</button>
+</div>
+
+<% if (ariaMin && ariaMax) { %>
+  <div style="margin-top:2em; padding:1em; border:1px solid #ccc; background:#f9f9f9;">
+    <strong>Aria minimă:</strong> <%= ariaMin %> cm<sup>2</sup><br>
+    <strong>Aria maximă:</strong> <%= ariaMax %> cm<sup>2</sup>
+  </div>
+<% } %>
+
+<script>
+document.getElementById('calculeaza-suma').onclick = function() {
+  let suma = 0;
+  document.querySelectorAll('.produs').forEach(function(sec, idx) {
+    const radios = document.getElementsByName('pret_produs_' + idx);
+    let val = null;
+    radios.forEach(radio => { if (radio.checked) val = radio.value; });
+    if (val === 'normal') {
+      suma += Number(sec.dataset.pretNormal);
+    } else if (val === 'redus' && sec.dataset.pretRedus) {
+      suma += Number(sec.dataset.pretRedus);
+    }
+  });
+  document.getElementById('suma-totala').textContent = 'Suma selectată: ' + suma + ' lei';
+};
+</script>
